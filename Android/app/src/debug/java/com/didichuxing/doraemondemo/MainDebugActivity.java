@@ -43,6 +43,12 @@ import com.didichuxing.doraemonkit.kit.network.common.NetworkPrinterHelper;
 import com.didichuxing.doraemonkit.okgo.OkGo;
 import com.didichuxing.doraemonkit.okgo.callback.StringCallback;
 import com.didichuxing.doraemonkit.okgo.model.Response;
+import com.didichuxing.foundation.net.rpc.http.HttpRpc;
+import com.didichuxing.foundation.net.rpc.http.HttpRpcClient;
+import com.didichuxing.foundation.net.rpc.http.HttpRpcClientFactory;
+import com.didichuxing.foundation.net.rpc.http.HttpRpcRequest;
+import com.didichuxing.foundation.net.rpc.http.HttpRpcResponse;
+import com.didichuxing.foundation.rpc.RpcServiceFactory;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.squareup.picasso.Picasso;
 import com.tencent.map.geolocation.TencentLocation;
@@ -102,7 +108,7 @@ public class MainDebugActivity extends AppCompatActivity implements View.OnClick
         findViewById(R.id.btn_load_img).setOnClickListener(this);
         findViewById(R.id.btn_okhttp_mock).setOnClickListener(this);
         findViewById(R.id.btn_connection_mock).setOnClickListener(this);
-//        findViewById(R.id.btn_rpc_mock).setOnClickListener(this);
+        findViewById(R.id.btn_rpc_mock).setOnClickListener(this);
         findViewById(R.id.btn_test_crash).setOnClickListener(this);
         findViewById(R.id.btn_show_hide_icon).setOnClickListener(this);
         findViewById(R.id.btn_create_database).setOnClickListener(this);
@@ -347,8 +353,9 @@ public class MainDebugActivity extends AppCompatActivity implements View.OnClick
                 //requestByGet("https://gank.io/api/today?a=哈哈&b=bb");
                 requestByGet("http://gank.io/gateway?api=dj.map");
                 break;
-//            case R.id.btn_rpc_mock:
-//                break;
+            case R.id.btn_rpc_mock:
+                didiRpcMock("http://gank.io/gateway?api=dj.map");
+                break;
 
             case R.id.btn_test_custom:
 
@@ -385,6 +392,37 @@ public class MainDebugActivity extends AppCompatActivity implements View.OnClick
         return null;
     }
 
+    /**
+     * 滴滴内部网络框架 mock
+     *
+     * @param url
+     */
+    public void didiRpcMock(String url) {
+        RpcServiceFactory factory = new RpcServiceFactory(MainDebugActivity.this);
+        HttpRpcClient client = factory.getRpcClient(HttpRpcClientFactory.PROTOCOL_HTTPS);
+        client = client.newBuilder()
+                //.addInterceptor(new RpcMockInterceptor())
+                //.addInterceptor(new RpcMonitorInterceptor())
+                .build();
+        HttpRpcRequest request = new HttpRpcRequest.Builder().get(url).build();
+        client.newRpc(request).enqueue(new HttpRpc.Callback() {
+            @Override
+            public void onSuccess(HttpRpcResponse httpRpcResponse) {
+                try {
+                    String content = ConvertUtils.inputStream2String(httpRpcResponse.getEntity().getContent(), "utf-8");
+                    Log.i(TAG, "didirpc====response====>" + content);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(HttpRpcRequest httpRpcRequest, IOException e) {
+                Log.e(TAG, "rpc result====>" + e.getMessage());
+            }
+        });
+
+    }
 
     public void requestByGet(final String path) {
         ThreadUtils.executeByIo(new ThreadUtils.SimpleTask<String>() {

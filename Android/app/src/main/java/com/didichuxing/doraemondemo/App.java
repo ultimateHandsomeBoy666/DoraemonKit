@@ -8,6 +8,7 @@ import android.support.multidex.MultiDex;
 
 import com.didichuxing.doraemondemo.dokit.DemoKit;
 import com.didichuxing.doraemonkit.DoraemonKit;
+import com.didichuxing.doraemonkit.DoraemonKitRpc;
 import com.didichuxing.doraemonkit.kit.IKit;
 import com.didichuxing.doraemonkit.kit.webdoor.WebDoorManager;
 import com.facebook.drawee.backends.pipeline.Fresco;
@@ -28,9 +29,9 @@ public class App extends Application {
         super.onCreate();
         List<IKit> kits = new ArrayList<>();
         kits.add(new DemoKit());
-        DoraemonKit.install(this, kits, "0f2e4fc5540392a7083d61c921198c78");
+        DoraemonKitRpc.install(this, kits, "0f2e4fc5540392a7083d61c921198c78");
         //是否显示入口icon
-        //DoraemonKit.setAwaysShowMianIcon(false);
+        DoraemonKit.setAwaysShowMianIcon(true);
         Fresco.initialize(this);
         DoraemonKit.setWebDoorCallback(new WebDoorManager.WebDoorCallback() {
             @Override
