@@ -28,29 +28,7 @@
 
 @implementation DoraemonH5ViewController
 
-- (UITableView *)tableView {
-    if (!_tableView) {
-        _tableView = [[UITableView alloc] init];
-//        _tableView.backgroundColor = [UIColor orangeColor];
-        _tableView.delegate = self;
-        _tableView.dataSource = self;
-        [_tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"cell"];
-//        _tableView.tableFooterView = [UIView new];
-        [self.view addSubview:_tableView];
-    }
-    return _tableView;
-}
-
-- (UIButton *)scanJumpBtn {
-    if (!_scanJumpBtn) {
-        _scanJumpBtn = [UIButton buttonWithType:(UIButtonTypeCustom)];
-        [_scanJumpBtn setBackgroundImage:[UIImage doraemon_imageNamed:@"doraemon_scan"] forState:(UIControlStateNormal)];
-        [_scanJumpBtn addTarget:self action:@selector(clickScan) forControlEvents:UIControlEventTouchUpInside];
-        [self.view addSubview:_scanJumpBtn];
-    }
-    return _scanJumpBtn;
-}
-
+#pragma mark - Life Cycle Methods
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = DoraemonLocalizedString(@"H5任意门");
@@ -67,7 +45,6 @@
     
     _h5UrlTextView = [[UITextView alloc] initWithFrame:CGRectMake(0, self.bigTitleView.doraemon_bottom + kDoraemonSizeFrom750_Landscape(32), self.view.doraemon_width, kDoraemonSizeFrom750_Landscape(358))];
     _h5UrlTextView.font = [UIFont systemFontOfSize:kDoraemonSizeFrom750_Landscape(32)];
-    //_h5UrlTextView.placeholder = DoraemonLocalizedString(@"请输入网址");
     [self.view addSubview:_h5UrlTextView];
     _h5UrlTextView.keyboardType = UIKeyboardTypeURL;
     _h5UrlTextView.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -88,6 +65,12 @@
     self.scanJumpBtn.frame = CGRectMake(self.view.doraemon_width - kDoraemonSizeFrom750_Landscape(38.6 + 33.2), _lineView.doraemon_top - kDoraemonSizeFrom750_Landscape(38.6 + 33.2), kDoraemonSizeFrom750_Landscape(38.6), kDoraemonSizeFrom750_Landscape(38.6));
     
     self.tableView.frame = CGRectMake(0, _lineView.doraemon_bottom + kDoraemonSizeFrom750_Landscape(32), self.view.doraemon_width, _jumpBtn.doraemon_top - _lineView.doraemon_bottom - kDoraemonSizeFrom750_Landscape(32));
+    
+    [self.view bringSubviewToFront:_jumpBtn];
+    
+    // 监听键盘的显示和隐藏
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -96,12 +79,17 @@
     [self.tableView reloadData];
 }
 
-- (BOOL)needBigTitleView{
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+#pragma mark - Override Methods
+- (BOOL)needBigTitleView {
     return YES;
 }
 
+#pragma mark - Target Methods
 - (void)clickScan {
-    
     if ([DoraemonAppInfoUtil isSimulator]) {
         [DoraemonToastUtil showToastBlack:DoraemonLocalizedString(@"模拟器不支持扫码功能") inView:self.view];
         return;
@@ -118,9 +106,9 @@
     [self presentViewController:nav animated:YES completion:nil];
 }
 
-- (void)jump{
-    if (_h5UrlTextView.text.length==0) {
-        [DoraemonToastUtil showToastBlack:DoraemonLocalizedString(@"h5链接不能为空") inView:self.view];
+- (void)jump {
+    if (_h5UrlTextView.text.length == 0) {
+        [DoraemonToastUtil showToastBlack:DoraemonLocalizedString(@"链接不能为空") inView:self.view];
         return;
     }
     
@@ -134,14 +122,46 @@
     if ([DoraemonManager shareInstance].h5DoorBlock) {
         [self leftNavBackClick:nil];
         [DoraemonManager shareInstance].h5DoorBlock(h5Url);
-    }else{
+    } else {
         DoraemonDefaultWebViewController *vc = [[DoraemonDefaultWebViewController alloc] init];
         vc.h5Url = [self urlCorrectionWithURL:h5Url];
         [self.navigationController pushViewController:vc animated:YES];
     }
 }
-#pragma mark - tableView
 
+#pragma mark - NSNotification
+// 当键盘出现或改变时调用（调整view位置，适应键盘高度，即：让view在键盘上）
+- (void)keyboardWillShow:(NSNotification *)aNotification {
+    // 获取键盘的高度
+    NSDictionary *userInfo = [aNotification userInfo];
+    NSValue *aValue = [userInfo objectForKey:UIKeyboardFrameEndUserInfoKey];
+    CGRect keyboardRect = [aValue CGRectValue];
+    CGFloat height = keyboardRect.size.height;
+    
+    CGRect frame = self.jumpBtn.frame;
+
+    CGFloat offset = height - (DoraemonScreenHeight - CGRectGetMaxY(frame));
+
+    CGFloat duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    [UIView animateWithDuration:duration animations:^{
+        if (offset > 0) {
+            self.jumpBtn.doraemon_y = self.jumpBtn.doraemon_y - offset;
+            [self.view layoutIfNeeded];
+        }
+    }];
+}
+
+// 当键退出时调用
+- (void)keyboardWillHide:(NSNotification *)aNotification {
+    NSDictionary *userInfo = [aNotification userInfo];
+    CGFloat duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    [UIView animateWithDuration:duration animations:^{
+        self.jumpBtn.doraemon_y = self.view.doraemon_height - kDoraemonSizeFrom750_Landscape(30 + 100);
+        [self.view layoutIfNeeded];
+    }];
+}
+
+#pragma mark - tableView
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     return self.dataSource.count;
 }
@@ -152,11 +172,11 @@
     if (self.dataSource.count > indexPath.row) {
         cell.textLabel.text = self.dataSource[indexPath.row];
     } else {
-        cell.textLabel.text = @"默认值";
+        cell.textLabel.text = @"default value";
     }
     cell.textLabel.textColor = [UIColor doraemon_colorWithHex:0x333333 andAlpha:1];
     cell.textLabel.font = [UIFont systemFontOfSize:kDoraemonSizeFrom750_Landscape(30)];
-    cell.imageView.image = [UIImage doraemon_imageNamed:@"doraemon_search"];
+    cell.imageView.image = [UIImage doraemon_xcassetImageNamed:@"doraemon_search"];
     return cell;
 }
 
@@ -188,6 +208,21 @@
     return footerView;
 }
 
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath{
+    return YES;
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath{
+    return DoraemonLocalizedString(@"删除");
+}
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+    [[DoraemonCacheManager sharedInstance] clearH5historicalRecordWithText:self.dataSource[indexPath.row]];
+    self.dataSource = [[DoraemonCacheManager sharedInstance] h5historicalRecord];
+    [self.tableView reloadData];
+}
+
+
 /// 清除记录
 - (void)clearRecord {
     [[DoraemonCacheManager sharedInstance] clearAllH5historicalRecord];
@@ -216,6 +251,30 @@
     }
     
     return URL;
+}
+
+#pragma mark - Lazy Loads
+- (UITableView *)tableView {
+    if (!_tableView) {
+        _tableView = [[UITableView alloc] init];
+//        _tableView.backgroundColor = [UIColor orangeColor];
+        _tableView.delegate = self;
+        _tableView.dataSource = self;
+        [_tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"cell"];
+//        _tableView.tableFooterView = [UIView new];
+        [self.view addSubview:_tableView];
+    }
+    return _tableView;
+}
+
+- (UIButton *)scanJumpBtn {
+    if (!_scanJumpBtn) {
+        _scanJumpBtn = [UIButton buttonWithType:(UIButtonTypeCustom)];
+        [_scanJumpBtn setBackgroundImage:[UIImage doraemon_xcassetImageNamed:@"doraemon_scan"] forState:(UIControlStateNormal)];
+        [_scanJumpBtn addTarget:self action:@selector(clickScan) forControlEvents:UIControlEventTouchUpInside];
+        [self.view addSubview:_scanJumpBtn];
+    }
+    return _scanJumpBtn;
 }
 
 @end

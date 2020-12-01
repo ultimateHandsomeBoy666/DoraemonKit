@@ -7,9 +7,11 @@
 
 #import "UIViewController+DoraemonVCProfiler.h"
 #import "NSObject+Doraemon.h"
+#import "DoraemonDefine.h"
 #import <objc/runtime.h>
 #import "DoraemonHealthManager.h"
 #import "DoraemonCacheManager.h"
+#import "DoraemonManager.h"
 
 //#define Doraemon_VC_Profiler_LOG_ENABLE 
 
@@ -31,14 +33,9 @@ static void doraemon_vc_profiler_viewDidLoad(UIViewController *kvo_self, SEL _se
     assert(origin_imp != NULL);
 
     [[DoraemonHealthManager sharedInstance] startEnterPage:origin_cls];
-    //[[DoraemonCacheManager sharedInstance] saveShouldAutorotate:kvo_self.shouldAutorotate];
     
     void (*func)(UIViewController *, SEL) = (void (*)(UIViewController *, SEL))origin_imp;
-
-    //VCLog(@"VC: %p -viewDidLoad \t\tbegin  at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
-    //VCLog(@"yixiang class = %@ viewDidLoad",origin_cls);
     func(kvo_self, _sel);
-    //VCLog(@"VC: %p -viewDidLoad \t\tfinish at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
 }
 
 static void doraemon_vc_profiler_viewWillAppear(UIViewController *kvo_self, SEL _sel, BOOL animated) {
@@ -49,11 +46,7 @@ static void doraemon_vc_profiler_viewWillAppear(UIViewController *kvo_self, SEL 
     assert(origin_imp != NULL);
 
     void (*func)(UIViewController *, SEL, BOOL) = (void (*)(UIViewController *, SEL, BOOL))origin_imp;
-
-    //VCLog(@"yixiang class = %@ viewWillAppear",origin_cls);
-    //VCLog(@"VC: %p -viewWillAppear \tbegin  at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
     func(kvo_self, _sel, animated);
-    //VCLog(@"VC: %p -viewWillAppear \tfinish at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
 }
 
 static void doraemon_vc_profiler_viewDidAppear(UIViewController *kvo_self, SEL _sel, BOOL animated) {
@@ -63,13 +56,9 @@ static void doraemon_vc_profiler_viewDidAppear(UIViewController *kvo_self, SEL _
     assert(origin_imp != NULL);
 
     void (*func)(UIViewController *, SEL, BOOL) = (void (*)(UIViewController *, SEL, BOOL))origin_imp;
-
-    //VCLog(@"yixiang class = %@ viewDidAppear",origin_cls);
-    //VCLog(@"VC: %p -viewDidAppear \tbegin  at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
+    
     func(kvo_self, _sel, animated);
-    //VCLog(@"VC: %p -viewDidAppear \tfinish at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
     [[DoraemonHealthManager sharedInstance] enterPage:origin_cls];
-    //[[DoraemonCacheManager sharedInstance] saveShouldAutorotate:kvo_self.shouldAutorotate];
 }
 
 static void doraemon_vc_profiler_viewWillDisAppear(UIViewController *kvo_self, SEL _sel, BOOL animated) {
@@ -80,10 +69,7 @@ static void doraemon_vc_profiler_viewWillDisAppear(UIViewController *kvo_self, S
 
     void (*func)(UIViewController *, SEL, BOOL) = (void (*)(UIViewController *, SEL, BOOL))origin_imp;
 
-    //VCLog(@"yixiang class = %@ viewWillDisAppear",origin_cls);
-    //VCLog(@"VC: %p -viewDidAppear \tbegin  at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
     func(kvo_self, _sel, animated);
-    //VCLog(@"VC: %p -viewDidAppear \tfinish at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
 }
 
 static void doraemon_vc_profiler_viewDidDisappear(UIViewController *kvo_self, SEL _sel, BOOL animated) {
@@ -94,10 +80,7 @@ static void doraemon_vc_profiler_viewDidDisappear(UIViewController *kvo_self, SE
 
     void (*func)(UIViewController *, SEL, BOOL) = (void (*)(UIViewController *, SEL, BOOL))origin_imp;
 
-    //VCLog(@"yixiang class = %@ viewDidDisappear",origin_cls);
-    //VCLog(@"VC: %p -viewDidAppear \tbegin  at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
     func(kvo_self, _sel, animated);
-    //VCLog(@"VC: %p -viewDidAppear \tfinish at CF time:\t%lf", kvo_self, CFAbsoluteTimeGetCurrent());
     [[DoraemonHealthManager sharedInstance] leavePage:origin_cls];
 }
 
@@ -129,7 +112,7 @@ static void doraemon_vc_profiler_viewDidDisappear(UIViewController *kvo_self, SE
 @implementation DoraemonFakeKVORemover
 
 - (void)dealloc{
-    //VCLog(@"target == %@ , dealloc",_target);
+    //DoKitLog(@"target == %@ , dealloc",_target);
     [_target removeObserver:[DoraemonFakeKVOObserver shared] forKeyPath:_keyPath];
     _target = nil;
 }
@@ -139,31 +122,39 @@ static void doraemon_vc_profiler_viewDidDisappear(UIViewController *kvo_self, SE
 @implementation UIViewController (DoraemonVCProfiler)
 
 + (void)load {
-    [self doraemon_swizzleInstanceMethodWithOriginSel:@selector(initWithNibName:bundle:) swizzledSel:@selector(doraemon_initWithNibName:bundle:)];
-    [self doraemon_swizzleInstanceMethodWithOriginSel:@selector(initWithCoder:) swizzledSel:@selector(doraemon_initWithCoder:)];
-    //[self doraemon_swizzleInstanceMethodWithOriginSel:@selector(shouldAutorotate) swizzledSel:@selector(doraemon_shouldAutorotate)];
+    if ([[DoraemonCacheManager sharedInstance] healthStart]){
+        [self doraemon_swizzleInstanceMethodWithOriginSel:@selector(initWithNibName:bundle:) swizzledSel:@selector(doraemon_initWithNibName:bundle:)];
+        [self doraemon_swizzleInstanceMethodWithOriginSel:@selector(initWithCoder:) swizzledSel:@selector(doraemon_initWithCoder:)];
+    }
 }
-//- (BOOL)doraemon_shouldAutorotate{
-//    BOOL result = [self doraemon_shouldAutorotate];
-//
-//    return [[DoraemonCacheManager sharedInstance] shouldAutorotate];
-//}
 
 - (instancetype)doraemon_initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil{
     [self createAndHookKVOClass];
-    //VCLog(@"vc(initWithNibName) ==  %@",[self class]);
+    //DoKitLog(@"vc(initWithNibName) ==  %@",[self class]);
     [self doraemon_initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     return self;
 }
 
 - (instancetype)doraemon_initWithCoder:(NSCoder *)coder{
     [self createAndHookKVOClass]; 
-    //VCLog(@"vc(initWithCoder) == %@",[self class]);
+    //DoKitLog(@"vc(initWithCoder) == %@",[self class]);
     [self doraemon_initWithCoder:coder];
     return self;
 }
 
+// 黑名单用户不会触发KVO监控
+- (BOOL)blackList:(NSString *)className{
+    NSArray *blackList=[DoraemonManager shareInstance].vcProfilerBlackList;
+    if (blackList && blackList.count>0 && [blackList containsObject:className]) {
+       return YES;
+    }
+    return NO;
+}
+
 - (void)createAndHookKVOClass {
+    if ([self blackList:NSStringFromClass(self.class)]) {
+        return;
+    }
     [self addObserver:[DoraemonFakeKVOObserver shared] forKeyPath:kUniqueFakeKeyPath options:NSKeyValueObservingOptionNew context:nil];
     
     DoraemonFakeKVORemover *remover = [[DoraemonFakeKVORemover alloc] init];
@@ -181,7 +172,7 @@ static void doraemon_vc_profiler_viewDidDisappear(UIViewController *kvo_self, SE
     
     Class originCls = class_getSuperclass(kvoCls);
     
-    //VCLog(@"Hook %@", kvoCls);
+    //DoKitLog(@"Hook %@", kvoCls);
     
     // 获取原来实现的encoding
     const char *originViewDidLoadEncoding = method_getTypeEncoding(class_getInstanceMethod(originCls, @selector(viewDidLoad)));

@@ -22,7 +22,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = DoraemonLocalizedString(@"卡顿详情");
-    [self setRightNavTitle:@"导出"];
+    [self setRightNavTitle:DoraemonLocalizedString(@"导出")];
     
     self.anrInfo = [NSDictionary dictionaryWithContentsOfFile:self.filePath];
     
@@ -39,7 +39,7 @@
     _anrTimeLabel = [[UILabel alloc] init];
     _anrTimeLabel.textColor = [UIColor doraemon_black_1];
     _anrTimeLabel.font = [UIFont systemFontOfSize:kDoraemonSizeFrom750_Landscape(16)];
-    _anrTimeLabel.text = [NSString stringWithFormat:@"卡顿耗时 : %@ms",_anrInfo[@"duration"]];
+    _anrTimeLabel.text = [NSString stringWithFormat:@"anr time : %@ms",_anrInfo[@"duration"]];
     [_anrTimeLabel sizeToFit];
     _anrTimeLabel.frame = CGRectMake(20, _contentLabel.doraemon_bottom+20, _anrTimeLabel.doraemon_width, _anrTimeLabel.doraemon_height);
     [self.view addSubview:_anrTimeLabel];
@@ -48,7 +48,7 @@
 }
 
 - (void)rightNavTitleClick:(id)clickView{
-    [DoraemonUtil shareFileWithPath:self.filePath formVC:self];
+    [DoraemonUtil shareURL:[NSURL fileURLWithPath:self.filePath] formVC:self];
 }
 
 

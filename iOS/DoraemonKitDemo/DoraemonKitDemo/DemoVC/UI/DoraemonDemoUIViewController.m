@@ -12,17 +12,21 @@
 
 @interface DoraemonDemoUIViewController ()
 
+@property (nonatomic, strong) UIView *redView;
+@property (nonatomic, strong) UILabel *titleLabelAAA;
+
 @end
 
 @implementation DoraemonDemoUIViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = DoraemonLocalizedString(@"视觉测试Demo");
+    self.title = DoraemonDemoLocalizedString(@"视觉测试Demo");
     
     UIView *redView = [[UIView alloc] initWithFrame:CGRectMake(100, 200, 60, 60)];
     redView.backgroundColor = [UIColor redColor];
     [self.view addSubview:redView];
+    _redView = redView;
     
 //    UIView *alphaView = [[UIView alloc] initWithFrame:CGRectMake(100, 300, 60, 60)];
 //    alphaView.backgroundColor = [UIColor doraemon_colorWithHexString:@"#FFFF00"];
@@ -30,10 +34,11 @@
 //    [self.view addSubview:alphaView];
     
     UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(100, 400, 200, 60)];
-    titleLabel.text = DoraemonLocalizedString(@"我是来测试的");
+    titleLabel.text = DoraemonDemoLocalizedString(@"我是来测试的");
     titleLabel.backgroundColor = [UIColor doraemon_colorWithString:@"#00FF00"];
     titleLabel.textColor = [UIColor doraemon_colorWithString:@"#FF0000"];
     [self.view addSubview:titleLabel];
+    _titleLabelAAA = titleLabel;
     
     UITextField *input = [[UITextField alloc] initWithFrame:CGRectMake(100, 300, 200, 50)];
     input.textAlignment = NSTextAlignmentCenter;
@@ -50,7 +55,7 @@
     UIButton *button = [[UIButton alloc] initWithFrame:CGRectMake(200, 200, 200, 50)];
     button.backgroundColor = [UIColor lightGrayColor];
     button.layer.cornerRadius = 8;
-    [button setTitle:@"UIMenuController测试" forState:UIControlStateNormal];
+    [button setTitle:@"UIMenuController" forState:UIControlStateNormal];
     [button addTarget:self action:@selector(deleteBtnAction:) forControlEvents:UIControlEventTouchUpInside];
     
     [self.view addSubview:button];
@@ -68,8 +73,8 @@
     [self.view.window becomeFirstResponder];
     [self becomeFirstResponder];// 用于UIMenuController显示，缺一不可
     UIMenuController *menu = [UIMenuController sharedMenuController];
-    UIMenuItem *item1 = [[UIMenuItem alloc] initWithTitle:@"撤销" action:@selector(revokeAction)];
-    UIMenuItem *item2 = [[UIMenuItem alloc] initWithTitle:@"确认" action:@selector(sureAction)];
+    UIMenuItem *item1 = [[UIMenuItem alloc] initWithTitle:@"cancel" action:@selector(revokeAction)];
+    UIMenuItem *item2 = [[UIMenuItem alloc] initWithTitle:@"ok" action:@selector(sureAction)];
     menu.menuItems = @[item1, item2];
     menu.arrowDirection = UIMenuControllerArrowUp;
     [menu setMenuVisible:YES animated:YES];
@@ -113,13 +118,13 @@
 }
 
 - (void)revokeAction{
-    NSLog(@"选择了撤销");
+    NSLog(@"cancel");
     //UIWindow *window = [[UIApplication sharedApplication].delegate window];
     //[window.rootViewController presentViewController:[[PresentViewController alloc] init] animated:YES completion:nil];
 }
 
 - (void)sureAction{
-    NSLog(@"选择了删除");
+    NSLog(@"ok");
     
     
     //NSArray *array = [string componentsSeparatedByString:@";"]; //从字符A中分隔成2个元素的数组

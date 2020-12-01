@@ -18,23 +18,23 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = DoraemonLocalizedString(@"通用测试");
+    self.title = DoraemonDemoLocalizedString(@"通用测试Demo");
     
     UIButton *btn0 = [[UIButton alloc] initWithFrame:CGRectMake(0, IPHONE_NAVIGATIONBAR_HEIGHT, self.view.doraemon_width, 60)];
     btn0.backgroundColor = [UIColor orangeColor];
-    [btn0 setTitle:DoraemonLocalizedString(@"子线程UI操作") forState:UIControlStateNormal];
+    [btn0 setTitle:DoraemonDemoLocalizedString(@"子线程UI操作") forState:UIControlStateNormal];
     [btn0 addTarget:self action:@selector(addSubViewAtOtherThread) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn0];
     
     UIButton *btn1 = [[UIButton alloc] initWithFrame:CGRectMake(0, btn0.doraemon_bottom+20, self.view.doraemon_width, 60)];
     btn1.backgroundColor = [UIColor orangeColor];
-    [btn1 setTitle:DoraemonLocalizedString(@"显示入口") forState:UIControlStateNormal];
+    [btn1 setTitle:DoraemonDemoLocalizedString(@"显示入口") forState:UIControlStateNormal];
     [btn1 addTarget:self action:@selector(showEntry) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn1];
     
     UIButton *btn2 = [[UIButton alloc] initWithFrame:CGRectMake(0, btn1.doraemon_bottom+20, self.view.doraemon_width, 60)];
     btn2.backgroundColor = [UIColor orangeColor];
-    [btn2 setTitle:DoraemonLocalizedString(@"隐藏入口") forState:UIControlStateNormal];
+    [btn2 setTitle:DoraemonDemoLocalizedString(@"隐藏入口") forState:UIControlStateNormal];
     [btn2 addTarget:self action:@selector(hiddenEntry) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn2];
     
@@ -42,6 +42,10 @@
     imgView.image = [[self class] jy_QRCodeFromString:@"hello" size:100];
     [self.view addSubview:imgView];
 
+    // 设置允许摇一摇功能
+    [UIApplication sharedApplication].applicationSupportsShakeToEdit = YES;
+    // 并让自己成为第一响应者
+    [self becomeFirstResponder];
 }
 
 - (void)addSubViewAtOtherThread{
@@ -109,6 +113,23 @@
     CGImageRelease(bitmapImage);
     CGContextRelease(bitmapContextRef);
     return retVal;
+}
+
+- (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    NSLog(@"start shake");
+    return;
+}
+
+- (void)motionCancelled:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    NSLog(@"cancel shake");
+    return;
+}
+
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    if (event.subtype == UIEventSubtypeMotionShake) { // 判断是否是摇动结束
+        NSLog(@"stop shake");
+    }
+    return;
 }
 
 
